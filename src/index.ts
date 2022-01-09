@@ -5,7 +5,6 @@ import {
   Address,
   translateAddress,
 } from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
 import { useState, useEffect } from "react";
 
 type CancelablePromise<T> = {
