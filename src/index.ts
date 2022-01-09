@@ -1,5 +1,10 @@
-import { IdlAccounts, Idl, Program, Address } from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
+import {
+  IdlAccounts,
+  Idl,
+  Program,
+  Address,
+  translateAddress,
+} from "@project-serum/anchor";
 import { useState, useEffect } from "react";
 
 type CancelablePromise<T> = {
@@ -50,7 +55,7 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
       program.account[accountType].fetch(address)
     );
     promise
-      .then(setAccount)
+      .then((a) => setAccount(a as IdlAccounts<I>[A]))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
     return cancel;
@@ -92,7 +97,7 @@ export function useLiveAnchorAccount<
       program.account[accountType].fetch(address)
     );
     promise
-      .then(setAccount)
+      .then((a) => setAccount(a as IdlAccounts<I>[A]))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
     return cancel;
@@ -104,7 +109,7 @@ export function useLiveAnchorAccount<
     }
     // using raw connection listener here because anchor subscribe seems to only fire once
     const listener = program.provider.connection.onAccountChange(
-      new PublicKey(address),
+      translateAddress(address),
       (account, context) => {
         try {
           setAccount(
