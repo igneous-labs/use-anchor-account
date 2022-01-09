@@ -2,21 +2,23 @@ import { IdlAccounts, Idl, Program, Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { useState, useEffect } from "react";
 
-type CancellablePromise<T> = Promise<T> & {
+type CancelablePromise<T> = {
+  promise: Promise<T>;
   cancel: () => void;
 };
 
-const makeCancelable = <T>(promise: Promise<T>) => {
+const makeCancelable = <T>(promise: Promise<T>): CancelablePromise<T> => {
   let rejectFn;
-  const wrappedPromise = new Promise((resolve, reject) => {
+  const p: Promise<T> = new Promise((resolve, reject) => {
     rejectFn = reject;
     Promise.resolve(promise).then(resolve).catch(reject);
-  }) as CancellablePromise<T>;
-
-  wrappedPromise.cancel = () => {
-    rejectFn({ canceled: true });
+  });
+  return {
+    promise: p,
+    cancel: () => {
+      rejectFn({ canceled: true });
+    },
   };
-  return wrappedPromise;
 };
 
 export type UseAnchorAccountResult<
@@ -44,12 +46,14 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
     setLoading(true);
     setAccount(undefined);
     setError(undefined);
-    const promise = makeCancelable(program.account[accountType].fetch(address));
+    const { promise, cancel } = makeCancelable(
+      program.account[accountType].fetch(address)
+    );
     promise
       .then(setAccount)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-    return promise.cancel;
+    return cancel;
   }, [program, address]);
 
   return {
@@ -84,12 +88,14 @@ export function useLiveAnchorAccount<
     setLoading(true);
     setAccount(undefined);
     setError(undefined);
-    const promise = makeCancelable(program.account[accountType].fetch(address));
+    const { promise, cancel } = makeCancelable(
+      program.account[accountType].fetch(address)
+    );
     promise
       .then(setAccount)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-    return promise.cancel;
+    return cancel;
   }, [program, address]);
 
   useEffect(() => {
