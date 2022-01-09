@@ -50,7 +50,7 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
       program.account[accountType].fetch(address)
     );
     promise
-      .then(setAccount)
+      .then((a) => setAccount(a as IdlAccounts<I>[A]))
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
     return cancel;
@@ -62,6 +62,11 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
     error,
   };
 }
+
+type UpdatedAccount<I extends Idl, A extends keyof IdlAccounts<I>> = {
+  account: IdlAccounts<I>[A];
+  slotUpdated: number;
+};
 
 export type UseLiveAnchorAccountResult<
   I extends Idl,
@@ -76,30 +81,19 @@ export function useLiveAnchorAccount<
   accountType: A,
   address: Address | null | undefined
 ): UseLiveAnchorAccountResult<I, A> {
-  const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState<IdlAccounts<I>[A] | undefined>();
+  const {
+    loading,
+    account: fetchedAccount,
+    error: fetchError,
+  } = useAnchorAccount(program, accountType, address);
+
   const [error, setError] = useState<string | undefined>();
-  const [slotUpdated, setSlotUpdated] = useState<number | undefined>();
+  const [updatedAccount, setUpdatedAccount] = useState<
+    UpdatedAccount<I, A> | undefined
+  >();
 
   useEffect(() => {
-    if (!program || !address) {
-      return;
-    }
-    setLoading(true);
-    setAccount(undefined);
-    setError(undefined);
-    const { promise, cancel } = makeCancelable(
-      program.account[accountType].fetch(address)
-    );
-    promise
-      .then(setAccount)
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-    return cancel;
-  }, [program, address]);
-
-  useEffect(() => {
-    if (!program || !address || !account) {
+    if (!program || !address || !fetchedAccount) {
       return;
     }
     // using raw connection listener here because anchor subscribe seems to only fire once
@@ -107,13 +101,13 @@ export function useLiveAnchorAccount<
       new PublicKey(address),
       (account, context) => {
         try {
-          setAccount(
-            program.account[accountType].coder.accounts.decode(
-              accountType,
-              account.data
-            )
-          );
-          setSlotUpdated(context.slot);
+          const updatedAccount = program.account[
+            accountType
+          ].coder.accounts.decode(accountType, account.data);
+          setUpdatedAccount({
+            account: updatedAccount,
+            slotUpdated: context.slot,
+          });
         } catch (e) {
           setError((e as Error).message);
         }
@@ -122,12 +116,12 @@ export function useLiveAnchorAccount<
     return () => {
       program.provider.connection.removeAccountChangeListener(listener);
     };
-  }, [account]);
+  }, [fetchedAccount]);
 
   return {
     loading,
-    account,
-    error,
-    slotUpdated,
+    account: updatedAccount ? updatedAccount.account : fetchedAccount,
+    error: error ?? fetchError,
+    slotUpdated: updatedAccount?.slotUpdated,
   };
 }

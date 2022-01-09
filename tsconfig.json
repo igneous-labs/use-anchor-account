@@ -9,7 +9,6 @@
     "rootDir": "src/",
     "esModuleInterop": true,
     "strict": true,
-    // missing buffer-layout types
     "noImplicitAny": false
   },
   "include": ["src/"]
