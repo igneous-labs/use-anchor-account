@@ -1,4 +1,10 @@
-import { IdlAccounts, Idl, Program, Address } from "@project-serum/anchor";
+import {
+  IdlAccounts,
+  Idl,
+  Program,
+  Address,
+  translateAddress,
+} from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { useState, useEffect } from "react";
 
@@ -98,8 +104,9 @@ export function useLiveAnchorAccount<
     }
     // using raw connection listener here because anchor subscribe seems to only fire once
     const listener = program.provider.connection.onAccountChange(
-      new PublicKey(address),
+      translateAddress(address),
       (account, context) => {
+        setError(undefined);
         try {
           const updatedAccount = program.account[
             accountType
