@@ -98,6 +98,7 @@ export function useLiveAnchorAccount<
   >();
 
   useEffect(() => {
+    setError(undefined);
     if (!program || !address || !fetchedAccount) {
       return;
     }
@@ -105,7 +106,6 @@ export function useLiveAnchorAccount<
     const listener = program.provider.connection.onAccountChange(
       translateAddress(address),
       (account, context) => {
-        setError(undefined);
         try {
           const updatedAccount = program.account[
             accountType
