@@ -1,4 +1,5 @@
 import { IdlAccounts, Idl, Program, Address } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import { useState, useEffect } from "react";
 
 type CancellablePromise<T> = Promise<T> & {
@@ -58,6 +59,11 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   };
 }
 
+export type UseLiveAnchorAccountResult<
+  I extends Idl,
+  A extends keyof IdlAccounts<I>
+> = UseAnchorAccountResult<I, A> & { slotUpdated?: number };
+
 export function useLiveAnchorAccount<
   I extends Idl,
   A extends keyof IdlAccounts<I>
@@ -65,10 +71,11 @@ export function useLiveAnchorAccount<
   program: Program<I> | null | undefined,
   accountType: A,
   address: Address | null | undefined
-): UseAnchorAccountResult<I, A> {
+): UseLiveAnchorAccountResult<I, A> {
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState<IdlAccounts<I>[A] | undefined>();
   const [error, setError] = useState<string | undefined>();
+  const [slotUpdated, setSlotUpdated] = useState<number | undefined>();
 
   useEffect(() => {
     if (!program || !address) {
@@ -89,10 +96,25 @@ export function useLiveAnchorAccount<
     if (!program || !address || !account) {
       return;
     }
-    const emitter = program.account[accountType].subscribe(address);
-    emitter.on("change", setAccount);
+    // using raw connection listener here because anchor subscribe seems to only fire once
+    const listener = program.provider.connection.onAccountChange(
+      new PublicKey(address),
+      (account, context) => {
+        try {
+          setAccount(
+            program.account[accountType].coder.accounts.decode(
+              accountType,
+              account.data
+            )
+          );
+          setSlotUpdated(context.slot);
+        } catch (e) {
+          setError((e as Error).message);
+        }
+      }
+    );
     return () => {
-      program.account[accountType].unsubscribe(address);
+      program.provider.connection.removeAccountChangeListener(listener);
     };
   }, [account]);
 
@@ -100,5 +122,6 @@ export function useLiveAnchorAccount<
     loading,
     account,
     error,
+    slotUpdated,
   };
 }
