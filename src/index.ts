@@ -45,12 +45,12 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
-    setLoading(true);
-    setAccount(undefined);
-    setError(undefined);
     if (!program || !address) {
       return;
     }
+    setLoading(true);
+    setAccount(undefined);
+    setError(undefined);
     const { promise, cancel } = makeCancelable(
       program.account[accountType].fetch(address)
     );
@@ -87,12 +87,12 @@ export function useLiveAnchorAccount<
   const [slotUpdated, setSlotUpdated] = useState<number | undefined>();
 
   useEffect(() => {
-    setLoading(true);
-    setAccount(undefined);
-    setError(undefined);
     if (!program || !address) {
       return;
     }
+    setLoading(true);
+    setAccount(undefined);
+    setError(undefined);
     const { promise, cancel } = makeCancelable(
       program.account[accountType].fetch(address)
     );
