@@ -45,12 +45,12 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   const [error, setError] = useState<string | undefined>();
 
   useEffect(() => {
-    if (!program || !address) {
-      return;
-    }
     setLoading(true);
     setAccount(undefined);
     setError(undefined);
+    if (!program || !address) {
+      return;
+    }
     const { promise, cancel } = makeCancelable(
       program.account[accountType].fetch(address)
     );
@@ -59,7 +59,7 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
     return cancel;
-  }, [program, address]);
+  }, [program, accountType, address]);
 
   return {
     loading,
@@ -87,12 +87,12 @@ export function useLiveAnchorAccount<
   const [slotUpdated, setSlotUpdated] = useState<number | undefined>();
 
   useEffect(() => {
-    if (!program || !address) {
-      return;
-    }
     setLoading(true);
     setAccount(undefined);
     setError(undefined);
+    if (!program || !address) {
+      return;
+    }
     const { promise, cancel } = makeCancelable(
       program.account[accountType].fetch(address)
     );
