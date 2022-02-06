@@ -7,10 +7,10 @@ import {
 } from "@project-serum/anchor";
 import { useState, useEffect } from "react";
 
-type CancelablePromise<T> = {
+interface CancelablePromise<T> {
   promise: Promise<T>;
   cancel: () => void;
-};
+}
 
 const makeCancelable = <T>(promise: Promise<T>): CancelablePromise<T> => {
   let rejectFn;
@@ -26,14 +26,14 @@ const makeCancelable = <T>(promise: Promise<T>): CancelablePromise<T> => {
   };
 };
 
-export type UseAnchorAccountResult<
+export interface UseAnchorAccountResult<
   I extends Idl,
   A extends keyof IdlAccounts<I>
-> = {
+> {
   loading: boolean;
   account?: IdlAccounts<I>[A];
   error?: string;
-};
+}
 
 export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   program: Program<I> | null | undefined,
@@ -68,10 +68,12 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   };
 }
 
-export type UseLiveAnchorAccountResult<
+export interface UseLiveAnchorAccountResult<
   I extends Idl,
   A extends keyof IdlAccounts<I>
-> = UseAnchorAccountResult<I, A> & { slotUpdated?: number };
+> extends UseAnchorAccountResult<I, A> {
+  slotUpdated?: number;
+}
 
 export function useLiveAnchorAccount<
   I extends Idl,
