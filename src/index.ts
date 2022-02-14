@@ -143,8 +143,7 @@ export function useLiveAnchorAccount<
 function fetcher<I extends Idl, A extends keyof IdlAccounts<I>>(
   program: Program<I>,
 ) {
-  return function (method: A, ...params: [Address]): Promise<IdlAccounts<I>[A]> {
-    const address = params[0];
+  return function (method: A, address: Address): Promise<IdlAccounts<I>[A]> {
     return program.account[method].fetch(address) as Promise<IdlAccounts<I>[A]>;
   };
 }
