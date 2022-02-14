@@ -184,7 +184,7 @@ export function useSWRAnchorAccount<
 
   return {
     loading,
-    account: account as IdlAccounts<I>[A],
+    account,
     error,
     mutate,
     isValidating,
