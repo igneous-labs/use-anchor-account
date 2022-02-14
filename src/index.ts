@@ -6,6 +6,7 @@ import {
   translateAddress,
 } from "@project-serum/anchor";
 import { useState, useEffect } from "react";
+import useSWR, { SWRConfiguration, KeyedMutator } from "swr";
 
 interface CancelablePromise<T> {
   promise: Promise<T>;
@@ -28,7 +29,7 @@ const makeCancelable = <T>(promise: Promise<T>): CancelablePromise<T> => {
 
 export interface UseAnchorAccountResult<
   I extends Idl,
-  A extends keyof IdlAccounts<I>
+  A extends keyof IdlAccounts<I>,
 > {
   loading: boolean;
   account?: IdlAccounts<I>[A];
@@ -38,7 +39,7 @@ export interface UseAnchorAccountResult<
 export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
   program: Program<I> | null | undefined,
   accountType: A,
-  address: Address | null | undefined
+  address: Address | null | undefined,
 ): UseAnchorAccountResult<I, A> {
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState<IdlAccounts<I>[A] | undefined>();
@@ -52,7 +53,7 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
     setAccount(undefined);
     setError(undefined);
     const { promise, cancel } = makeCancelable(
-      program.account[accountType].fetch(address)
+      program.account[accountType].fetch(address),
     );
     promise
       .then((a) => setAccount(a as IdlAccounts<I>[A]))
@@ -70,18 +71,18 @@ export function useAnchorAccount<I extends Idl, A extends keyof IdlAccounts<I>>(
 
 export interface UseLiveAnchorAccountResult<
   I extends Idl,
-  A extends keyof IdlAccounts<I>
+  A extends keyof IdlAccounts<I>,
 > extends UseAnchorAccountResult<I, A> {
   slotUpdated?: number;
 }
 
 export function useLiveAnchorAccount<
   I extends Idl,
-  A extends keyof IdlAccounts<I>
+  A extends keyof IdlAccounts<I>,
 >(
   program: Program<I> | null | undefined,
   accountType: A,
-  address: Address | null | undefined
+  address: Address | null | undefined,
 ): UseLiveAnchorAccountResult<I, A> {
   const [loading, setLoading] = useState(false);
   const [account, setAccount] = useState<IdlAccounts<I>[A] | undefined>();
@@ -96,7 +97,7 @@ export function useLiveAnchorAccount<
     setAccount(undefined);
     setError(undefined);
     const { promise, cancel } = makeCancelable(
-      program.account[accountType].fetch(address)
+      program.account[accountType].fetch(address),
     );
     promise
       .then((a) => setAccount(a as IdlAccounts<I>[A]))
@@ -117,14 +118,14 @@ export function useLiveAnchorAccount<
           setAccount(
             program.account[accountType].coder.accounts.decode(
               accountType,
-              account.data
-            )
+              account.data,
+            ),
           );
           setSlotUpdated(context.slot);
         } catch (e) {
           setError((e as Error).message);
         }
-      }
+      },
     );
     return () => {
       program.provider.connection.removeAccountChangeListener(listener);
@@ -136,5 +137,56 @@ export function useLiveAnchorAccount<
     account,
     error,
     slotUpdated,
+  };
+}
+
+function fetcher<I extends Idl, A extends keyof IdlAccounts<I>>(
+  program: Program<I>,
+) {
+  return function (method: A, ...params: [Address]): IdlAccounts<I>[A] {
+    const address = params[0];
+    return program.account[method].fetch(address) as IdlAccounts<I>[A];
+  };
+}
+
+export interface UseSWRAnchorAccountResult<
+  I extends Idl,
+  A extends keyof IdlAccounts<I>,
+> {
+  loading: boolean;
+  account?: IdlAccounts<I>[A];
+  mutate: KeyedMutator<IdlAccounts<I>[A]>;
+  error?: string;
+  isValidating: boolean;
+}
+
+export function useSWRAnchorAccount<
+  I extends Idl,
+  A extends keyof IdlAccounts<I>,
+>(
+  program: Program<I> | null | undefined,
+  accountType: A,
+  address: Address | null | undefined,
+  swrOptions?: SWRConfiguration,
+): UseSWRAnchorAccountResult<I, A> {
+  const {
+    data: account,
+    error,
+    mutate,
+    isValidating,
+  } = useSWR<IdlAccounts<I>[A]>(
+    program && address && [accountType, address],
+    fetcher(program!),
+    swrOptions,
+  );
+
+  const loading = !account;
+
+  return {
+    loading,
+    account: account as IdlAccounts<I>[A],
+    error,
+    mutate,
+    isValidating,
   };
 }
