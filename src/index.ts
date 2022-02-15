@@ -143,8 +143,13 @@ export function useLiveAnchorAccount<
 function fetcher<I extends Idl, A extends keyof IdlAccounts<I>>(
   program: Program<I>,
 ) {
-  return function (accountType: A, address: Address): Promise<IdlAccounts<I>[A]> {
-    return program.account[accountType].fetch(address) as Promise<IdlAccounts<I>[A]>;
+  return function (
+    accountType: A,
+    address: Address,
+  ): Promise<IdlAccounts<I>[A]> {
+    return program.account[accountType].fetch(address) as Promise<
+      IdlAccounts<I>[A]
+    >;
   };
 }
 
@@ -174,7 +179,7 @@ export function useSWRAnchorAccount<
     mutate,
     isValidating,
   } = useSWR<IdlAccounts<I>[A]>(
-    program && address && [accountType, address],
+    program && address && [accountType, translateAddress(address)],
     fetcher(program!),
     swrOptions,
   );
