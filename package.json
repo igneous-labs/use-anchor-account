@@ -8,6 +8,7 @@
   ],
   "devDependencies": {
     "@project-serum/anchor": "^0.20.0",
+    "@types/react": "^18.0.9",
     "react": "^17.0.2",
     "swr": "^1.2.1",
     "typescript": "^4.3.5"

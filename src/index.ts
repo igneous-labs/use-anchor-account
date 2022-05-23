@@ -107,7 +107,7 @@ export function useLiveAnchorAccount<
   }, [program, address]);
 
   useEffect(() => {
-    if (!program || !address || !account) {
+    if (!program || !address) {
       return;
     }
     // using raw connection listener here because anchor subscribe seems to only fire once
@@ -130,7 +130,7 @@ export function useLiveAnchorAccount<
     return () => {
       program.provider.connection.removeAccountChangeListener(listener);
     };
-  }, [account]);
+  }, [program, address]);
 
   return {
     loading,
